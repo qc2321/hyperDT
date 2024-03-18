@@ -30,7 +30,7 @@ def wrapped_normal_hypersphere(
     seed: int = None,
     adjust_for_dim: bool = True,
 ) -> np.ndarray:
-    """Generate points from a mixture of Gaussians on the hyperboloid"""
+    """Generate points from a mixture of Gaussians on the hypersphere"""
 
     # Set seed
     if seed is not None:
@@ -70,7 +70,7 @@ def wrapped_normal_hypersphere(
     vecs = [np.random.multivariate_normal(np.zeros(n_dim), covs[c]) for c in classes]
     tangent_vecs = np.concatenate([np.zeros(shape=(num_points, 1)), vecs], axis=1)
 
-    # Transport each tangent vector to its corresponding mean on the hyperboloid
+    # Transport each tangent vector to its corresponding mean on the hypersphere
     tangent_vecs_transported = hyp.metric.parallel_transport(
         tangent_vec=tangent_vecs, base_point=origin, end_point=means[classes]
     )
