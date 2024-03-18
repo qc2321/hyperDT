@@ -73,7 +73,7 @@ def wrapped_normal_hypersphere(
         tangent_vec=tangent_vecs, base_point=origin, end_point=means[classes]
     )
 
-    # Exponential map to hyperboloid at the class mean
+    # Exponential map to hyperboloid at the class mean [DOES THIS MATTER FOR HYPERSPHERE?]
     keep = ~bad_points(tangent_vecs_transported, means[classes], hyp)
     tangent_vecs_transported = tangent_vecs_transported[keep]
     classes = classes[keep]
