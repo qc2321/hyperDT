@@ -36,9 +36,9 @@ def wrapped_normal_hypersphere(
     if seed is not None:
         np.random.seed(seed)
 
-    # Make manifold (with origin in the north pole of the hypersphere)
+    # Make manifold
     hyp = Hypersphere(dim=n_dim)
-    origin = np.array([0.0] * n_dim + [1.0])
+    origin = np.array([1.0] + [0.0] * n_dim)
 
     # Generate random means; parallel transport from origin
     means = np.concatenate(
