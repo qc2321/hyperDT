@@ -1,4 +1,6 @@
-"""Toy data for hyperboloid classification"""
+'''
+Wrapped Normal Hypersphere (modified from toy_data.py)
+'''
 
 import numpy as np
 from geomstats.geometry.hypersphere import Hypersphere
@@ -35,7 +37,7 @@ def wrapped_normal_hypersphere(
         np.random.seed(seed)
 
     # Make manifold (with origin in the north pole of the hypersphere)
-    hyp = Hypersphere(dim=n_dim, intrinsic=False)
+    hyp = Hypersphere(dim=n_dim)
     origin = np.array([0.0] * n_dim + [1.0])
 
     # Generate random means; parallel transport from origin
