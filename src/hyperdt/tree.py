@@ -5,6 +5,7 @@ from warnings import warn
 from sklearn.base import BaseEstimator, ClassifierMixin
 from .hyperbolic_trig import get_candidates
 from .cache import SplitCache
+from functools import lru_cache
 
 
 class DecisionNode:
@@ -77,6 +78,7 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
         unique_vals = np.unique(X[:, dim])  # already sorted
         return (unique_vals[:-1] + unique_vals[1:]) / 2
 
+    @lru_cache()
     def _fit_node(self, X, y, depth):
         """Recursively fit a node of the tree"""
 
@@ -88,7 +90,8 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
         # Recursively find the best split:
         best_dim, best_theta, best_score = None, None, -1
         for dim in self.dims:
-            for theta in self._get_candidates(X=X, dim=dim):
+            for count, theta in enumerate(self._get_candidates(X=X, dim=dim)):
+                print(f'dim: {dim}, theta: {theta}, count: {count}')    # [DEBUG]
                 left, right = self._get_split(X=X, dim=dim, theta=theta)
                 min_len = np.min([len(y[left]), len(y[right])])
                 if min_len >= self.min_samples_leaf:
