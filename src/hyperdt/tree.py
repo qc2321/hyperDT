@@ -78,7 +78,6 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
         unique_vals = np.unique(X[:, dim])  # already sorted
         return (unique_vals[:-1] + unique_vals[1:]) / 2
 
-    @lru_cache()
     def _fit_node(self, X, y, depth):
         """Recursively fit a node of the tree"""
 
@@ -201,6 +200,7 @@ class HyperbolicDecisionTreeClassifier(DecisionTreeClassifier):
         p = self._dot(X, dim, theta)
         return p < 0, p >= 0
 
+    @lru_cache()
     def _get_candidates(self, X, dim):
         if self.candidates == "data":
             return get_candidates(
