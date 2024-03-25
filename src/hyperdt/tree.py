@@ -5,7 +5,6 @@ from warnings import warn
 from sklearn.base import BaseEstimator, ClassifierMixin
 from .hyperbolic_trig import get_candidates
 from .cache import SplitCache
-from functools import lru_cache
 
 
 class DecisionNode:
@@ -200,7 +199,6 @@ class HyperbolicDecisionTreeClassifier(DecisionTreeClassifier):
         p = self._dot(X, dim, theta)
         return p < 0, p >= 0
 
-    @lru_cache()
     def _get_candidates(self, X, dim):
         if self.candidates == "data":
             return get_candidates(
