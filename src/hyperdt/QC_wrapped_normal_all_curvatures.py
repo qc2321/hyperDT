@@ -23,40 +23,6 @@ def bad_points(points, base_points, manifold):
     return manifold.metric.squared_norm(exp) == 0
 
 
-def Euclidean_mixture(num_points, num_classes, noise_std, n_dim, seed, adjust_for_dim):
-    """Generate points from a mixture of Gaussians in Euclidean space"""
-    # Set seed
-    if seed is not None:
-        np.random.seed(seed)
-
-    # Generate random means
-    means = np.random.normal(size=(num_classes, n_dim))
-
-    # Generate random covariance matrices
-    covs = np.zeros((num_classes, n_dim, n_dim))
-    for i in range(num_classes):
-        covs[i] = np.random.normal(size=(n_dim, n_dim))
-        covs[i] = covs[i] @ covs[i].T
-    covs = noise_std * covs
-    if adjust_for_dim:
-        covs = covs / n_dim
-
-    # Generate random class probabilities
-    probs = np.random.uniform(size=num_classes)
-    probs = probs / np.sum(probs)
-
-    # First, determine class assignments
-    classes = np.random.choice(num_classes, size=num_points, p=probs)
-
-    # Sample the appropriate covariance matrix
-    vecs = [np.random.multivariate_normal(np.zeros(n_dim), covs[c]) for c in classes]
-
-    # Generate points
-    points = np.array([means[c] + vecs[i] for i, c in enumerate(classes)])
-
-    return points, classes
-
-
 def wrapped_normal_all_curvature(
     num_points: int,
     num_classes: int,
@@ -81,18 +47,19 @@ def wrapped_normal_all_curvature(
     else:
         is_euclidean = True
 
-    # Set origin
+    # Set origin for hyperboloid and hypersphere
     origin = np.array([1.0] + [0.0] * n_dim)
 
     # Generate random means; parallel transport from origin
-    means = np.concatenate(
-        [
-            np.zeros(shape=(num_classes, 1)),
-            np.random.normal(size=(num_classes, n_dim)),
-        ],
-        axis=1,
-    )
+    means = np.random.normal(size=(num_classes, n_dim))
     if not is_euclidean:
+        means = np.concatenate(
+            [
+                np.zeros(shape=(num_classes, 1)),
+                means,
+            ],
+            axis=1,
+        )
         means = hyp.metric.exp(tangent_vec=means, base_point=origin)
 
     # Generate random covariance matrices
@@ -113,7 +80,8 @@ def wrapped_normal_all_curvature(
 
     # Sample the appropriate covariance matrix and make tangent vectors
     vecs = [np.random.multivariate_normal(np.zeros(n_dim), covs[c]) for c in classes]
-    tangent_vecs = np.concatenate([np.zeros(shape=(num_points, 1)), vecs], axis=1)
+    if not is_euclidean:
+        tangent_vecs = np.concatenate([np.zeros(shape=(num_points, 1)), vecs], axis=1)
 
     # Transport each tangent vector to its corresponding mean on the hyperboloid
     if not is_euclidean:
@@ -128,6 +96,7 @@ def wrapped_normal_all_curvature(
         classes = classes[keep]
         points = hyp.metric.exp(tangent_vec=tangent_vecs_transported, base_point=means[classes])
     else:
-        points = tangent_vecs
+        list_of_points = [np.random.multivariate_normal(means[c], covs[c]) for c in classes]
+        points = np.asarray(list_of_points)
 
     return points, classes

@@ -89,7 +89,7 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
         best_dim, best_theta, best_score = None, None, -1
         for dim in self.dims:
             for count, theta in enumerate(self._get_candidates(X=X, dim=dim)):
-                print(f'dim: {dim}, theta: {theta}, count: {count}')    # [DEBUG]
+                # print(f'dim: {dim}, theta: {theta}, count: {count}')    # [DEBUG]
                 left, right = self._get_split(X=X, dim=dim, theta=theta)
                 min_len = np.min([len(y[left]), len(y[right])])
                 if min_len >= self.min_samples_leaf:
