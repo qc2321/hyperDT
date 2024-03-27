@@ -95,6 +95,7 @@ def wrapped_normal_all_curvature(
         tangent_vecs_transported = tangent_vecs_transported[keep]
         classes = classes[keep]
         points = hyp.metric.exp(tangent_vec=tangent_vecs_transported, base_point=means[classes])
+        points /= np.sqrt(abs(curvature))
     else:
         list_of_points = [np.random.multivariate_normal(means[c], covs[c]) for c in classes]
         points = np.asarray(list_of_points)
