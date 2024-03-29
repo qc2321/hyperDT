@@ -53,6 +53,7 @@ def wrapped_normal_all_curvature(
     # Generate random means; parallel transport from origin
     means = np.random.normal(size=(num_classes, n_dim))
     if not is_euclidean:
+        means = means * np.sqrt(abs(curvature))
         means = np.concatenate(
             [
                 np.zeros(shape=(num_classes, 1)),
@@ -81,6 +82,7 @@ def wrapped_normal_all_curvature(
     # Sample the appropriate covariance matrix and make tangent vectors
     vecs = [np.random.multivariate_normal(np.zeros(n_dim), covs[c]) for c in classes]
     if not is_euclidean:
+        vecs = [v * np.sqrt(abs(curvature)) for v in vecs]
         tangent_vecs = np.concatenate([np.zeros(shape=(num_points, 1)), vecs], axis=1)
 
     # Transport each tangent vector to its corresponding mean on the hyperboloid
@@ -96,8 +98,9 @@ def wrapped_normal_all_curvature(
         classes = classes[keep]
         points = hyp.metric.exp(tangent_vec=tangent_vecs_transported, base_point=means[classes])
         points /= np.sqrt(abs(curvature))
+        means /= np.sqrt(abs(curvature))
     else:
         list_of_points = [np.random.multivariate_normal(means[c], covs[c]) for c in classes]
         points = np.asarray(list_of_points)
 
-    return points, classes
+    return points, classes, means
