@@ -102,5 +102,8 @@ def wrapped_normal_all_curvature(
     else:
         list_of_points = [np.random.multivariate_normal(means[c], covs[c]) for c in classes]
         points = np.asarray(list_of_points)
+        # Lift Euclidean points with column of ones
+        # points = np.concatenate([np.ones((num_points, 1)), points], axis=1)
+        # means = np.concatenate([np.ones((num_classes, 1)), means], axis=1)
 
     return points, classes, means
