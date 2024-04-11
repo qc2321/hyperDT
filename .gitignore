@@ -3,7 +3,7 @@ data/
 src/__pycache__/
 *.egg_info/
 build/
-
+.DS_Store
 
 # Hyperbolic learning github repos I cloned
 hsvm/
