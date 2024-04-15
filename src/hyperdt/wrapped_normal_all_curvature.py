@@ -18,14 +18,16 @@ class WrappedNormalMixture:
         n_dim: int = 2,
         curvature: float = 0.0,
         seed: int = None,
+        cov_scale: float = 1.0,
     ):
         self.num_points = num_points
         self.num_classes = num_classes
         self.n_dim = n_dim
         self.curvature = curvature
-        self.seed = seed
         self.k = abs(curvature)
         self.curv_sign = 1
+        self.seed = seed
+        self.cov_scale = cov_scale
 
         # Set random number generator
         self.rng = np.random.default_rng(self.seed)
@@ -60,12 +62,12 @@ class WrappedNormalMixture:
         return self.manifold.metric.exp(tangent_vec=means, base_point=self.origin)
 
 
-    def generate_covariance_matrix(self, dims, deg_freedom):
+    def generate_covariance_matrix(self, dims, deg_freedom, scale):
         '''
         Generate random covariance matrix based on Wishart distribution.
         '''
-        scale_matrix = np.eye(dims)
-        cov_matrix = wishart.rvs(df=deg_freedom, scale=scale_matrix)
+        scale_matrix = scale * np.eye(dims)
+        cov_matrix = wishart.rvs(df=deg_freedom, scale=scale_matrix, random_state=self.rng)
 
         return cov_matrix
 
@@ -111,7 +113,7 @@ class WrappedNormalMixture:
         means = self.generate_cluster_means()
         
         # Generate covariance matrices for each class
-        covs = [self.generate_covariance_matrix(self.n_dim, self.n_dim + 1) for _ in range(self.num_classes)]
+        covs = [self.generate_covariance_matrix(self.n_dim, self.n_dim + 1, self.cov_scale) for _ in range(self.num_classes)]
 
         # Generate class assignments
         classes = self.generate_class_assignments()
@@ -122,4 +124,4 @@ class WrappedNormalMixture:
         # Readjust means for curvature
         means /= np.sqrt(self.k) if self.k != 0.0 else 1.0
 
-        return points, means
+        return points, classes, means

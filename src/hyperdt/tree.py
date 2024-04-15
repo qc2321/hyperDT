@@ -224,7 +224,7 @@ class HyperbolicDecisionTreeClassifier(DecisionTreeClassifier):
             raise ValueError(f"Points must lie on a hyperboloid: Minkowski norm does not equal {-1 / self.curvature}.")
 
         try:
-            assert np.all(X[:, self.timelike_dim] > 1.0 / self.curvature)  # Ensure timelike
+            assert np.all(X[:, self.timelike_dim] > 1.0 / np.sqrt(self.curvature))  # Ensure timelike
         except AssertionError:
             raise ValueError("Points must lie on a hyperboloid: Value at timelike dimension must be greater than 1.")
 
