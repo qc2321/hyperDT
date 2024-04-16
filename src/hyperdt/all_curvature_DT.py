@@ -10,7 +10,7 @@ class HyperspaceDecisionTree(HyperbolicDecisionTreeClassifier):
     def __init__(self, signed_curvature=-1.0, **kwargs):
         super().__init__(**kwargs)
         self.signed_curvature = signed_curvature
-        self.curvature = -signed_curvature
+        self.curvature = abs(signed_curvature)
         self.skip_hyperboloid_check = True if signed_curvature >= 0.0 else False
 
     def _get_candidates(self, X, dim):
@@ -27,4 +27,4 @@ class HyperspaceDecisionTree(HyperbolicDecisionTreeClassifier):
         # Euclidean case
         else:
             unique_vals = np.unique(X[:, dim])  # sorted
-            return (unique_vals[:-1] + unique_vals[1:]) / 2
+            return np.arctan2(2, unique_vals[:-1] + unique_vals[1:])
