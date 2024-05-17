@@ -72,7 +72,7 @@ class ProductSpace:
         """Generate data from a wrapped normal mixture on the product space"""
         self.X, self.y, self.means = [], [], []
         classes = WrappedNormalMixture(num_points=num_points, 
-                                       num_classes=num_classes).generate_class_assignments()
+                                       num_classes=num_classes, seed=seed).generate_class_assignments()
         for space in self.signature:
             wnm = WrappedNormalMixture(num_points=num_points, num_classes=num_classes, n_dim=space[0],
                                        curvature=space[1], seed=seed, cov_scale=cov_scale)
@@ -92,9 +92,15 @@ class ProductSpace:
         self.means = np.hstack(self.means)  # (num_classes, num_dims + 1 )
 
 
+    def embed(self, dists, seed=None, lr=0.01):
+        """Given distance matrix, return coordinates of points in product space"""
+        return
+
+
     def split_data(self, test_size=0.2, random_state=None):
         """Split the data into training and testing sets"""
         n = self.X.shape[0]
+        np.random.seed(random_state)
         test_idx = np.random.choice(n, int(test_size * n), replace=False)
         self.X_train = np.delete(self.X, test_idx, axis=0)
         self.X_test = self.X[test_idx]
