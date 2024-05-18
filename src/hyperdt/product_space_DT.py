@@ -35,11 +35,12 @@ class HyperspaceDecisionTree(HyperbolicDecisionTreeClassifier):
 Class for product space object
 '''
 class ProductSpace:
-    def __init__(self, signature=[], X=None, y=None):
+    def __init__(self, signature=[], X=None, y=None, seed=None):
         self.signature = signature
         self.check_signature()
         self.X = X
         self.y = y
+        self.seed = seed
     
 
     def check_signature(self):
@@ -68,14 +69,14 @@ class ProductSpace:
                 print(f"E: dim={space[0]}")
 
 
-    def sample_clusters(self, num_points, num_classes, seed=None, cov_scale=1.0):
+    def sample_clusters(self, num_points, num_classes, cov_scale=0.3):
         """Generate data from a wrapped normal mixture on the product space"""
         self.X, self.y, self.means = [], [], []
         classes = WrappedNormalMixture(num_points=num_points, 
-                                       num_classes=num_classes, seed=seed).generate_class_assignments()
+                                       num_classes=num_classes, seed=self.seed).generate_class_assignments()
         for space in self.signature:
             wnm = WrappedNormalMixture(num_points=num_points, num_classes=num_classes, n_dim=space[0],
-                                       curvature=space[1], seed=seed, cov_scale=cov_scale)
+                                       curvature=space[1], seed=self.seed, cov_scale=cov_scale)
             means = wnm.generate_cluster_means()
             covs = [wnm.generate_covariance_matrix(wnm.n_dim, wnm.n_dim + 1, wnm.cov_scale)
                     for _ in range(wnm.num_classes)]
@@ -97,10 +98,10 @@ class ProductSpace:
         return
 
 
-    def split_data(self, test_size=0.2, random_state=None):
+    def split_data(self, test_size=0.2):
         """Split the data into training and testing sets"""
         n = self.X.shape[0]
-        np.random.seed(random_state)
+        np.random.seed(self.seed)
         test_idx = np.random.choice(n, int(test_size * n), replace=False)
         self.X_train = np.delete(self.X, test_idx, axis=0)
         self.X_test = self.X[test_idx]
