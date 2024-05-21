@@ -26,16 +26,17 @@ def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_dept
 
 def compute_scores_by_signature(signatures, n, num_classes, seed=None,
                                 cov_scale=0.3, max_depth=3):
-    rng = np.random.default_rng(seed)
-    rnd_seeds = rng.integers(0, 1000, 10)
+    # rng = np.random.default_rng(seed)
+    # rnd_seeds = rng.integers(0, 1000, 10)
+    rnd_seeds = np.array([0, 1, 2, 10, 42, 123, 137, 1234, 12345])
 
     psdt_scores_by_signature = []
     dt_scores_by_signature = []
     for signature in signatures:
         psdt_scores = []
         dt_scores = []
-        for seed in rnd_seeds:
-            psdt_score, dt_score = compute_scores(signature, n, num_classes, seed=seed,
+        for rnd_seed in rnd_seeds:
+            psdt_score, dt_score = compute_scores(signature, n, num_classes, seed=rnd_seed,
                                                   cov_scale=cov_scale, max_depth=max_depth)
             psdt_scores.append(psdt_score)
             dt_scores.append(dt_score)

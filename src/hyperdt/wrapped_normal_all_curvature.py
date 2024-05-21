@@ -18,7 +18,7 @@ class WrappedNormalMixture:
         n_dim: int = 2,
         curvature: float = 0.0,
         seed: int = None,
-        cov_scale: float = 1.0,
+        cov_scale: float = 0.3,
     ):
         self.num_points = num_points
         self.num_classes = num_classes
