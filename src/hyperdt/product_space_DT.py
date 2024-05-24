@@ -93,11 +93,6 @@ class ProductSpace:
         self.means = np.hstack(self.means)  # (num_classes, num_dims + 1 )
 
 
-    def embed(self, dists, seed=None, lr=0.01):
-        """Given distance matrix, return coordinates of points in product space"""
-        return
-
-
     def split_data(self, test_size=0.2):
         """Split the data into training and testing sets"""
         n = self.X.shape[0]
@@ -107,6 +102,27 @@ class ProductSpace:
         self.X_test = self.X[test_idx]
         self.y_train = np.delete(self.y, test_idx)
         self.y_test = self.y[test_idx]
+
+
+    def zero_out_spacelike_dims(self, space_idx):
+        """Zero out spacelike dimensions in a given product space component"""
+        timelike_dim = sum([space[0] + 1 for space in self.signature[:space_idx]])
+        self.X[:, timelike_dim] = 1.0 / np.sqrt(abs(self.signature[space_idx][1]))
+        for i in range(self.signature[space_idx][0]):
+            self.X[:, timelike_dim + i + 1] = 0.0
+
+    
+    def remove_timelike_dims(self):
+        """Remove timelike dimensions from the product space"""
+        timelike_dims = [0]
+        for i in range(len(self.signature) - 1):
+            timelike_dims.append(sum([space[0] + 1 for space in self.signature[:i+1]]))
+        self.X = np.delete(self.X, timelike_dims, axis=1)
+
+
+    def find_points_from_dists(self, dists, seed=None, lr=0.01):
+        """TODO: Given distance matrix, return coordinates of points in product space"""
+        return
 
 
 '''
