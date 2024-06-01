@@ -1,7 +1,7 @@
 import numpy as np
 from hyperdt.tree import DecisionNode, HyperbolicDecisionTreeClassifier
 from hyperdt.wrapped_normal_all_curvature import WrappedNormalMixture
-
+from hyperdt.forest import RandomForestClassifier
 
 '''
 Decision tree classifier for all curvatures
@@ -201,3 +201,11 @@ class ProductSpaceDT(HyperspaceDecisionTree):
 
         # Call recursive fitting function
         self.tree = self._fit_node(X=self.ps.X_train, y=self.ps.y_train, depth=0)
+
+    def _left(self, x, node):
+        """Boolean: Go left?"""
+        space = self._get_space(node.feature)
+        dim_in_space = node.feature - self.timelike_dims[space]
+        space_cols = [self.timelike_dims[space] + i for i in range(self.ps.signature[space][0] + 1)]
+        feature_value = x[space_cols[dim_in_space]]
+        return self._dot(x[space_cols].reshape(1, -1), dim_in_space, node.theta).item() < 0
