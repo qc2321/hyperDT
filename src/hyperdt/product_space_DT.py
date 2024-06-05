@@ -1,7 +1,6 @@
 import numpy as np
 from hyperdt.tree import DecisionNode, HyperbolicDecisionTreeClassifier
 from hyperdt.wrapped_normal_all_curvature import WrappedNormalMixture
-from hyperdt.forest import RandomForestClassifier
 
 '''
 Decision tree classifier for all curvatures

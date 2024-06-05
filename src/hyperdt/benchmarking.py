@@ -1,46 +1,58 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from hyperdt.product_space_DT import ProductSpace, ProductSpaceDT
 from sklearn.tree import DecisionTreeClassifier
+from hyperdt.forest import ProductSpaceRF
+from sklearn.ensemble import RandomForestClassifier
+
 
 """
 Methods for computing and plotting accuracy scores across signatures
 """
-def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_depth=3):
+def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_depth=3, rf=False):
     # Generate data
     ps = ProductSpace(signature, seed=seed)
     ps.sample_clusters(n, num_classes, cov_scale=cov_scale)
     ps.split_data()
 
     # Fit hyperspace decision tree classifier
-    psdt = ProductSpaceDT(product_space=ps, max_depth=max_depth)
+    if rf:
+        psdt = ProductSpaceRF(product_space=ps, max_depth=max_depth, n_estimators=12)
+    else:
+        psdt = ProductSpaceDT(product_space=ps, max_depth=max_depth)
     psdt.fit()
     psdt_score = psdt.score(ps.X_test, ps.y_test)
 
     # Fit sklearn's decision tree classifier
     X_train, X_test, y_train, y_test = ps.X_train, ps.X_test, ps.y_train, ps.y_test
-    dt = DecisionTreeClassifier(max_depth=max_depth)
+    if rf:
+        dt = RandomForestClassifier(n_estimators=12, max_depth=max_depth)
+    else:
+        dt = DecisionTreeClassifier(max_depth=max_depth)
     dt.fit(X_train, y_train)
     dt_score = dt.score(X_test, y_test)
 
     return psdt_score, dt_score
 
 def compute_scores_by_signature(signatures, n, num_classes, seed=None,
-                                cov_scale=0.3, max_depth=3):
+                                cov_scale=0.3, max_depth=3, n_seeds=10, rf=False):
     rng = np.random.default_rng(seed)
-    rnd_seeds = rng.integers(0, 1000, 10)
+    rnd_seeds = rng.integers(0, 100000, n_seeds)
     # rnd_seeds = np.array([0, 1, 2, 10, 42, 123, 137, 1234, 12345])
 
     psdt_scores_by_signature = []
     dt_scores_by_signature = []
+    my_tqdm = tqdm(total=len(signatures) * n_seeds)
     for signature in signatures:
         psdt_scores = []
         dt_scores = []
         for rnd_seed in rnd_seeds:
             psdt_score, dt_score = compute_scores(signature, n, num_classes, seed=rnd_seed,
-                                                  cov_scale=cov_scale, max_depth=max_depth)
+                                                  cov_scale=cov_scale, max_depth=max_depth, rf=rf)
             psdt_scores.append(psdt_score)
             dt_scores.append(dt_score)
+            my_tqdm.update(1)
         psdt_scores_by_signature.append(psdt_scores)
         dt_scores_by_signature.append(dt_scores)
 
