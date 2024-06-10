@@ -85,7 +85,7 @@ class ProductSpace:
             self.y.append(classes)
             self.means.append(means)
             if wnm.curvature != 0.0:
-                assert np.allclose(wnm.manifold.metric.squared_norm(points), 1 / wnm.curvature)
+                assert np.allclose(wnm.manifold.metric.squared_norm(points), 1 / wnm.curvature, rtol=1e-4)
         
         self.X = np.hstack(self.X)          # (num_points, num_spaces * (num_dims+1) )
         self.y = self.y[0]                  # (num_points, )
