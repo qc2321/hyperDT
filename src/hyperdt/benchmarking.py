@@ -18,10 +18,10 @@ def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_dept
 
     # Fit hyperspace decision tree classifier
     if rf:
-        psdt = ProductSpaceRF(product_space=ps, max_depth=max_depth, n_estimators=12)
+        psdt = ProductSpaceRF(signature, max_depth=max_depth, n_estimators=12)
     else:
-        psdt = ProductSpaceDT(product_space=ps, max_depth=max_depth)
-    psdt.fit()
+        psdt = ProductSpaceDT(signature, max_depth=max_depth)
+    psdt.fit(ps.X_train, ps.y_train)
     psdt_score = psdt.score(ps.X_test, ps.y_test)
 
     # Fit sklearn's decision tree classifier
