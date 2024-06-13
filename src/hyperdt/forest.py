@@ -125,15 +125,15 @@ class HyperbolicRandomForestRegressor(RandomForestClassifier):
         self.timelike_dim = self.tree_params["timelike_dim"] = timelike_dim
         assert isinstance(self.trees[0], HyperbolicDecisionTreeRegressor)
 
+
 class ProductSpaceRF(BaseEstimator, ClassifierMixin):
-    def __init__(self, product_space, n_estimators=100, max_features='sqrt', max_samples=1.0, random_state=None, max_depth=3):
-        self.product_space = product_space
+    def __init__(self, signature, n_estimators=100, max_features='sqrt', max_samples=1.0, random_state=None, max_depth=3):
         self.n_estimators = n_estimators
         self.max_features = max_features
         self.max_samples = max_samples
         self.random_state = random_state
         self.max_depth = max_depth
-        self.trees = [ProductSpaceDT(product_space=product_space, max_depth=max_depth) for _ in range(n_estimators)]
+        self.trees = [ProductSpaceDT(signature, max_depth=max_depth) for _ in range(n_estimators)]
 
     def _generate_subsample(self, X, y):
         n_samples = X.shape[0]
@@ -141,35 +141,20 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         indices = np.random.choice(n_samples, size=sample_size, replace=True)
         return X[indices], y[indices]
 
-    # def _generate_subfeatures(self, X):
-    #     n_features = X.shape[1]
-    #     if self.max_features == 'sqrt':
-    #         feature_size = int(np.sqrt(n_features))
-    #     elif self.max_features == 'log2':
-    #         feature_size = int(np.log2(n_features))
-    #     else:
-    #         feature_size = int(n_features * self.max_features)
-    #     feature_indices = np.random.choice(n_features, size=feature_size, replace=False)
-    #     return feature_indices
-
-    def fit(self):
+    def fit(self, X, y):
         for tree in self.trees:
-            X_sample, y_sample = self._generate_subsample(tree.ps.X_train, tree.ps.y_train)
-            tree.ps.X_train = X_sample
-            tree.ps.y_train = y_sample
-            # feature_indices = self._generate_subfeatures(X_sample)
-            tree.fit()
+            X_sample, y_sample = self._generate_subsample(X, y)
+            tree.fit(X_sample, y_sample)
         return self
 
     def predict(self, X):
         predictions = np.array([tree.predict(X) for tree in self.trees])
-        # predictions = np.array([tree.predict(X[:, tree.feature_indices_]) for tree in self.trees])
         return stats.mode(predictions, axis=0, keepdims=False)[0]
 
     def predict_proba(self, X):
         predictions = np.array([tree.predict_proba(X) for tree in self.trees])
-        # predictions = np.array([tree.predict_proba(X[:, tree.feature_indices_]) for tree in self.trees])
         return np.mean(predictions, axis=0)
 
     def score(self, X, y):
         return np.mean(self.predict(X) == y)
+    

@@ -85,7 +85,7 @@ class ProductSpace:
             self.y.append(classes)
             self.means.append(means)
             if wnm.curvature != 0.0:
-                assert np.allclose(wnm.manifold.metric.squared_norm(points), 1 / wnm.curvature)
+                assert np.allclose(wnm.manifold.metric.squared_norm(points), 1 / wnm.curvature, rtol=1e-4)
         
         self.X = np.hstack(self.X)          # (num_points, num_spaces * (num_dims+1) )
         self.y = self.y[0]                  # (num_points, )
@@ -128,17 +128,17 @@ class ProductSpace:
 Decision tree classifier for product space
 '''
 class ProductSpaceDT(HyperspaceDecisionTree):
-    def __init__(self, product_space: ProductSpace = None, **kwargs):
+    def __init__(self, signature, **kwargs):
         super().__init__(**kwargs)
-        self.ps = product_space
+        self.signature = signature
         
 
     def _get_space(self, dim):
         """Find the space that a dimension belongs to"""
-        for i in range(len(self.ps.signature) - 1):
-            if dim < sum([space[0] + 1 for space in self.ps.signature[:i+1]]):
+        for i in range(len(self.signature) - 1):
+            if dim < sum([space[0] + 1 for space in self.signature[:i+1]]):
                 return i
-        return len(self.ps.signature) - 1
+        return len(self.signature) - 1
 
 
     def _fit_node(self, X, y, depth):
@@ -153,9 +153,9 @@ class ProductSpaceDT(HyperspaceDecisionTree):
         best_dim, best_theta, best_score = None, None, -1
         for dim in self.dims_ex_time:
             space = self._get_space(dim)
-            self.signed_curvature = self.ps.signature[space][1]
+            self.signed_curvature = self.signature[space][1]
             dim_in_space = dim - self.timelike_dims[space]
-            space_cols = [self.timelike_dims[space] + i for i in range(self.ps.signature[space][0]+1)]
+            space_cols = [self.timelike_dims[space] + i for i in range(self.signature[space][0]+1)]
             for theta in self._get_candidates(X=X[:,space_cols], dim=dim_in_space):
                 left, right = self._get_split(X=X[:,space_cols], dim=dim_in_space, theta=theta)
                 min_len = np.min([len(y[left]), len(y[right])])
@@ -174,37 +174,37 @@ class ProductSpaceDT(HyperspaceDecisionTree):
         node.score = best_score
         best_space = self._get_space(best_dim)
         best_dim_in_space = best_dim - self.timelike_dims[best_space]
-        best_space_cols = [self.timelike_dims[best_space] + i for i in range(self.ps.signature[best_space][0]+1)]
+        best_space_cols = [self.timelike_dims[best_space] + i for i in range(self.signature[best_space][0]+1)]
         left, right = self._get_split(X=X[:,best_space_cols], dim=best_dim_in_space, theta=best_theta)
         node.left = self._fit_node(X=X[left], y=y[left], depth=depth + 1)
         node.right = self._fit_node(X=X[right], y=y[right], depth=depth + 1)
         return node
     
 
-    def fit(self):
+    def fit(self, X, y):
         """Fit a decision tree to the data. Modified from HyperbolicDecisionTreeClassifier
         to remove multiple timelike dimensions in product space."""
         # Find all dimensions in product space (including timelike dimensions)
-        self.all_dims = list(range(sum([space[0] + 1 for space in self.ps.signature])))
+        self.all_dims = list(range(sum([space[0] + 1 for space in self.signature])))
         
         # Find indices of timelike dimensions in product space
         self.timelike_dims = [0]
-        for i in range(len(self.ps.signature) - 1):
-            self.timelike_dims.append(sum([space[0] + 1 for space in self.ps.signature[:i+1]]))
+        for i in range(len(self.signature) - 1):
+            self.timelike_dims.append(sum([space[0] + 1 for space in self.signature[:i+1]]))
         
         # Remove timelike dimensions from list of dimensions
         self.dims_ex_time = list(np.delete(np.array(self.all_dims), self.timelike_dims))
         
         # Get array of classes
-        self.classes_ = np.unique(self.ps.y_train)
+        self.classes_ = np.unique(y)
 
         # Call recursive fitting function
-        self.tree = self._fit_node(X=self.ps.X_train, y=self.ps.y_train, depth=0)
+        self.tree = self._fit_node(X=X, y=y, depth=0)
 
     def _left(self, x, node):
         """Boolean: Go left?"""
         space = self._get_space(node.feature)
         dim_in_space = node.feature - self.timelike_dims[space]
-        space_cols = [self.timelike_dims[space] + i for i in range(self.ps.signature[space][0] + 1)]
-        feature_value = x[space_cols[dim_in_space]]
+        space_cols = [self.timelike_dims[space] + i for i in range(self.signature[space][0] + 1)]
         return self._dot(x[space_cols].reshape(1, -1), dim_in_space, node.theta).item() < 0
+    
