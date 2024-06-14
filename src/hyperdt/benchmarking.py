@@ -10,58 +10,75 @@ from sklearn.ensemble import RandomForestClassifier
 """
 Methods for computing and plotting accuracy scores across signatures
 """
-def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_depth=3, rf=False):
+def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_depth=3):
     # Generate data
     ps = ProductSpace(signature, seed=seed)
     ps.sample_clusters(n, num_classes, cov_scale=cov_scale)
     ps.split_data()
 
-    # Fit hyperspace decision tree classifier
-    if rf:
-        psdt = ProductSpaceRF(signature, max_depth=max_depth, n_estimators=12)
-    else:
-        psdt = ProductSpaceDT(signature, max_depth=max_depth)
+    # Fit ProductSpaceDT
+    psdt = ProductSpaceDT(signature, max_depth=max_depth)
     psdt.fit(ps.X_train, ps.y_train)
     psdt_score = psdt.score(ps.X_test, ps.y_test)
 
-    # Fit sklearn's decision tree classifier
-    X_train, X_test, y_train, y_test = ps.X_train, ps.X_test, ps.y_train, ps.y_test
-    if rf:
-        dt = RandomForestClassifier(n_estimators=12, max_depth=max_depth)
-    else:
-        dt = DecisionTreeClassifier(max_depth=max_depth)
-    dt.fit(X_train, y_train)
-    dt_score = dt.score(X_test, y_test)
+    # Fit ProductSpaceRF
+    psrf = ProductSpaceRF(signature, max_depth=max_depth, n_estimators=12)
+    psrf.fit(ps.X_train, ps.y_train)
+    psrf_score = psrf.score(ps.X_test, ps.y_test)
 
-    return psdt_score, dt_score
+    # Fit sklearn's decision tree classifier
+    dt = DecisionTreeClassifier(max_depth=max_depth)
+    dt.fit(ps.X_train, ps.y_train)
+    dt_score = dt.score(ps.X_test, ps.y_test)
+
+    # Fit sklearn's random forest classifier
+    rf = RandomForestClassifier(n_estimators=12, max_depth=max_depth)
+    rf.fit(ps.X_train, ps.y_train)
+    rf_score = rf.score(ps.X_test, ps.y_test)
+
+    return psdt_score, psrf_score, dt_score, rf_score
+
 
 def compute_scores_by_signature(signatures, n, num_classes, seed=None,
-                                cov_scale=0.3, max_depth=3, n_seeds=10, rf=False):
+                                cov_scale=0.3, max_depth=3, n_seeds=10):
     rng = np.random.default_rng(seed)
     rnd_seeds = rng.integers(0, 100000, n_seeds)
-    # rnd_seeds = np.array([0, 1, 2, 10, 42, 123, 137, 1234, 12345])
 
     psdt_scores_by_signature = []
+    psrf_scores_by_signature = []
     dt_scores_by_signature = []
+    rf_scores_by_signature = []
+    
     my_tqdm = tqdm(total=len(signatures) * n_seeds)
     for signature in signatures:
         psdt_scores = []
+        psrf_scores = []
         dt_scores = []
-        for rnd_seed in rnd_seeds:
-            psdt_score, dt_score = compute_scores(signature, n, num_classes, seed=rnd_seed,
-                                                  cov_scale=cov_scale, max_depth=max_depth, rf=rf)
-            psdt_scores.append(psdt_score)
-            dt_scores.append(dt_score)
-            my_tqdm.update(1)
-        psdt_scores_by_signature.append(psdt_scores)
-        dt_scores_by_signature.append(dt_scores)
+        rf_scores = []
 
-    return rnd_seeds, psdt_scores_by_signature, dt_scores_by_signature
+        for rnd_seed in rnd_seeds:
+            score_tuple = compute_scores(signature, n, num_classes, seed=rnd_seed,
+                                         cov_scale=cov_scale, max_depth=max_depth)
+            psdt_scores.append(score_tuple[0])
+            psrf_scores.append(score_tuple[1])
+            dt_scores.append(score_tuple[2])
+            rf_scores.append(score_tuple[3])
+            my_tqdm.update(1)
+        
+        psdt_scores_by_signature.append(psdt_scores)
+        psrf_scores_by_signature.append(psrf_scores)
+        dt_scores_by_signature.append(dt_scores)
+        rf_scores_by_signature.append(rf_scores)
+
+    return (rnd_seeds, psdt_scores_by_signature, psrf_scores_by_signature,
+            dt_scores_by_signature, rf_scores_by_signature)
+
 
 def compute_avg_scores(psdt_scores_by_signature, dt_scores_by_signature):
     avg_psdt_scores = [np.mean(scores) for scores in psdt_scores_by_signature]
     avg_dt_scores = [np.mean(scores) for scores in dt_scores_by_signature]
     return avg_psdt_scores, avg_dt_scores
+
 
 def sig_as_str(sig):
     result = ""
@@ -76,6 +93,7 @@ def sig_as_str(sig):
             result += " x "
     return result
 
+
 def plot_avg_scores(signatures, avg_psdt_scores, avg_dt_scores):
     plt.figure(figsize=(10, 6))
     plt.plot([sig_as_str(sig) for sig in signatures], avg_psdt_scores, label='PSDT')
@@ -86,6 +104,7 @@ def plot_avg_scores(signatures, avg_psdt_scores, avg_dt_scores):
     plt.legend()
     plt.title('Average scores for different signatures')
     plt.show()
+
 
 def plot_boxplots(signatures, psdt_scores_by_signature, dt_scores_by_signature):
     plt.figure(figsize=(10, 5))
@@ -100,38 +119,3 @@ def plot_boxplots(signatures, psdt_scores_by_signature, dt_scores_by_signature):
     plt.legend([bp1["boxes"][0], bp2["boxes"][0]], ['HyperDT', 'Sklearn'])
     plt.show()
 
-
-"""
-Methods for plotting difference in accuracy scores for different signatures across random seeds
-"""
-def sort_scores(rnd_seeds, psdt_scores, dt_scores):
-    sorted_idx = np.argsort(rnd_seeds)
-    sorted_rnd_seeds = rnd_seeds[sorted_idx]
-    sorted_psdt_scores = np.array(psdt_scores)[sorted_idx]
-    sorted_dt_scores = np.array(dt_scores)[sorted_idx]
-    return sorted_rnd_seeds, sorted_psdt_scores, sorted_dt_scores
-
-def get_sorted_scores_by_signature(rnd_seeds, psdt_scores_by_signature, dt_scores_by_signature):
-    sorted_psdt_scores_by_signature = []
-    sorted_dt_scores_by_signature = []
-    sorted_rnd_seeds = None
-    for psdt_scores, dt_scores in zip(psdt_scores_by_signature, dt_scores_by_signature):
-        sorted_rnd_seeds, sorted_psdt_scores, sorted_dt_scores = sort_scores(rnd_seeds, psdt_scores, dt_scores)
-        sorted_psdt_scores_by_signature.append(sorted_psdt_scores)
-        sorted_dt_scores_by_signature.append(sorted_dt_scores)
-    return sorted_rnd_seeds, sorted_psdt_scores_by_signature, sorted_dt_scores_by_signature
-
-def compute_diff_scores(sorted_psdt_scores_by_signature, sorted_dt_scores_by_signature):
-    return [psdt_score - dt_score for psdt_score, dt_score in
-            zip(sorted_psdt_scores_by_signature, sorted_dt_scores_by_signature)]
-
-def plot_diff_scores(sorted_rnd_seeds, diff_scores, signatures):
-    plt.figure(figsize=(10, 6))
-    for i, diff_score in enumerate(diff_scores):
-        plt.plot(sorted_rnd_seeds, diff_score, label=f'{sig_as_str(signatures[i])}')
-    plt.axhline(0, color='black', linestyle='--')
-    plt.xlabel('Random Seed')
-    plt.ylabel('PSDT Score - DT Score')
-    plt.legend()
-    plt.title('Difference between PSDT and DT scores for different signatures')
-    plt.show()
