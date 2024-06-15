@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from geomstats.geometry.hyperboloid import Hyperboloid
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.euclidean import Euclidean

@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from hyperdt.product_space_DT import ProductSpace, ProductSpaceDT
+from .product_space_DT import ProductSpace, ProductSpaceDT
+from .forest import ProductSpaceRF
 from sklearn.tree import DecisionTreeClassifier
-from hyperdt.forest import ProductSpaceRF
 from sklearn.ensemble import RandomForestClassifier
 
 
