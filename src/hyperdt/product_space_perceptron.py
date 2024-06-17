@@ -122,7 +122,7 @@ class mix_curv_perceptron:
                             else:
                                 tmp_error_record[idx] = 1
                             total_error_count += 1
-                        print('\r', idx+1, 'samples finished.', total_error_count, end='')
+                        # print('\r', idx+1, 'samples finished.', total_error_count, end='')
                         if total_error_count == self.max_update:
                             break_flag = True
                             break

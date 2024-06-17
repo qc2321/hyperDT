@@ -119,11 +119,6 @@ class ProductSpace:
         self.X = np.delete(self.X, timelike_dims, axis=1)
 
 
-    def find_points_from_dists(self, dists, seed=None, lr=0.01):
-        """TODO: Given distance matrix, return coordinates of points in product space"""
-        return
-
-
 '''
 Decision tree classifier for product space
 '''
