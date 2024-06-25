@@ -44,10 +44,8 @@ class mix_curv_svm:
         self.space_dim = []
         for comp in prod_space_component:
             self.space_type.append(comp[0])
-            if comp.startswith('e'):
-                self.space_dim.append(int(comp[1]))
-            else:
-                self.space_dim.append(int(comp[1]) + 1)
+            # Removed condition from original code to add extra dim to Euclidean space
+            self.space_dim.append(int(comp[1]) + 1)
         # Construct train and test matrices
         self.G_train = np.zeros((self.train_size, self.train_size))
         self.G_train_list = []
@@ -95,9 +93,12 @@ class mix_curv_svm:
 
         conds = [epsilon >= 0, zeta >= 0, Y @ (self.G_train @ beta + cp.sum(beta)) >= epsilon - zeta]
         for comp_idx in range(len(self.space_type)):
-            if self.space_type[comp_idx] == 'e':
-                conds.append(cp.quad_form(beta, self.G_train_list[comp_idx]) <= self.alpha_e ** 2)
-            elif self.space_type[comp_idx] == 's':
+            # REMOVED CONSTRAINT FOR EUCLIDEAN SPACE
+            # if self.space_type[comp_idx] == 'e':
+            #     # Add constraint that b A b.T <= alpha^2
+            #     conds.append(cp.quad_form(beta, self.G_train_list[comp_idx]) <= self.alpha_e ** 2)
+            if self.space_type[comp_idx] == 's':
+                # Add constraint that b A b.T <= pi/2
                 conds.append(cp.quad_form(beta, self.G_train_list[comp_idx]) <= math.pi / 2)
 
         prob = cp.Problem(cp.Minimize(-epsilon + cp.sum(zeta)), conds)

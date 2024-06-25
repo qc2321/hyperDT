@@ -43,10 +43,8 @@ class mix_curv_perceptron:
         self.space_dim = []
         for comp in prod_space_component:
             self.space_type.append(comp[0])
-            if comp.startswith('e'):
-                self.space_dim.append(int(comp[1]))
-            else:
-                self.space_dim.append(int(comp[1]) + 1)
+            # Removed condition from original code to add extra dim to Euclidean space
+            self.space_dim.append(int(comp[1]) + 1)
 
         self.IpTrain = {}
 
