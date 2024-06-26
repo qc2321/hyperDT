@@ -124,7 +124,7 @@ class mix_curv_perceptron:
                         if total_error_count == self.max_update:
                             break_flag = True
                             break
-                    print('\n', epoch + 1, 'rounds finished.')
+                    # print('\n', epoch + 1, 'rounds finished.')
                     if break_flag:
                         break
                 # obtain the decision values for training samples
@@ -132,7 +132,7 @@ class mix_curv_perceptron:
                 for idx in range(self.n_train_samples):
                     decision_vals[idx] = self.mix_classifier_train(idx, tmp_error_record, y_bin_train)
                 tmp_ab = SigmoidTrain(deci=decision_vals, label=y_bin_train, prior1=None, prior0=None)
-                print('Platt probability computed')
+                # print('Platt probability computed')
                 # testing
                 for idx in range(self.n_test_samples):
                     yn = self.mix_classifier_test(idx, tmp_error_record, y_bin_train)
@@ -159,7 +159,7 @@ class mix_curv_perceptron:
                     if total_error_count == self.max_update:
                         break_flag = True
                         break
-                print('\n', epoch + 1, 'rounds finished,', total_error_count)
+                # print('\n', epoch + 1, 'rounds finished,', total_error_count)
                 if break_flag:
                     break
             # testing
