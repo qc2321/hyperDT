@@ -1,6 +1,6 @@
 import numpy as np
-from hyperdt.tree import DecisionNode, HyperbolicDecisionTreeClassifier
-from hyperdt.wrapped_normal_all_curvature import WrappedNormalMixture
+from .tree import DecisionNode, HyperbolicDecisionTreeClassifier
+from .wrapped_normal_all_curvature import WrappedNormalMixture
 
 '''
 Decision tree classifier for all curvatures
@@ -117,11 +117,6 @@ class ProductSpace:
         for i in range(len(self.signature) - 1):
             timelike_dims.append(sum([space[0] + 1 for space in self.signature[:i+1]]))
         self.X = np.delete(self.X, timelike_dims, axis=1)
-
-
-    def find_points_from_dists(self, dists, seed=None, lr=0.01):
-        """TODO: Given distance matrix, return coordinates of points in product space"""
-        return
 
 
 '''

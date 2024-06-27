@@ -1,6 +1,6 @@
 import numpy as np
-from hyperdt.tree import DecisionNode, HyperbolicDecisionTreeClassifier
-from hyperdt.wrapped_normal_all_curvature import WrappedNormalMixture
+from .tree import DecisionNode, HyperbolicDecisionTreeClassifier
+from .wrapped_normal_all_curvature import WrappedNormalMixture
 
 
 '''
