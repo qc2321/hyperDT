@@ -1,5 +1,5 @@
 import torch
-from .manifolds import ComponentManifold
+from .manifolds import create_manifold
 
 from typing import List
 
@@ -9,7 +9,7 @@ class ProductSpace:
         self,
         dims: List[int],
         curvatures: List[float],
-        agg_function: callable = lambda dists: np.linalg.norm(dists, axis=0),
+        agg_function: callable = lambda dists: torch.stack(dists).norm(dim=0),
     ):
         """
         agg_function should map iterables to scalars.
@@ -19,7 +19,7 @@ class ProductSpace:
         assert len(dims) == len(curvatures)
         self.dims = dims
         self.curvatures = curvatures
-        self.components = [ComponentManifold(dim, curvature) for dim, curvature in zip(dims, curvatures)]
+        self.components = [create_manifold(dim, curvature) for dim, curvature in zip(dims, curvatures)]
         self.agg_function = agg_function
 
     def split(self, x: torch.Tensor) -> List[torch.Tensor]:

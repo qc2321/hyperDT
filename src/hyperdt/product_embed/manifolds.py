@@ -1,4 +1,5 @@
 import torch
+from math import sqrt
 
 from .utils import _minkowski_dot, _euc_dot, _euc_embed, _hyp_embed, _sph_embed, _preprocess_vecs
 
@@ -8,9 +9,11 @@ class GenericManifold:
         self.dim = int(dim)
         self.curvature = float(curvature)
 
-    def _preprocess_for_dist(u, v) -> bool:
+    def _preprocess_for_dist(self, u, v) -> bool:
         u, v = _preprocess_vecs(u, v)
-        return u.shape[1] == v.shape[1] == self.dim + 1 and self.on_manifold(u) and self.on_manifold(v)
+        assert u.shape[1] == v.shape[1] == self.dim + 1
+        assert self.on_manifold(u) and self.on_manifold(v)
+        return u, v
 
     def embed_point(self, x):
         raise NotImplementedError
@@ -28,10 +31,10 @@ class Euclidean(GenericManifold):
 
     def on_manifold(self, x):
         x = _preprocess_vecs(x)
-        return torch.allclose(x[:, 0], 1.0) and x.shape[1] == self.dim + 1
+        return torch.allclose(x[:, 0], torch.Tensor([1.0])) and x.shape[1] == self.dim + 1
 
     def dist(self, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-        u, v = _preprocess_for_dist(u, v)
+        u, v = self._preprocess_for_dist(u, v)
         return torch.linalg.vector_norm(u[None, :] - v[:, None], axis=2)
 
 
@@ -42,14 +45,14 @@ class Hyperbolic(GenericManifold):
     def on_manifold(self, x):
         x = _preprocess_vecs(x)
         return (
-            torch.allclose(_minkowski_dot(x, x), 1 / self.curvature)
+            torch.allclose(_minkowski_dot(x, x), torch.Tensor([1 / self.curvature]))
             and (x[:, 0] > 0).all()
             and x.shape[1] == self.dim + 1
         )
 
     def dist(self, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-        u, v = _preprocess_for_dist(u, v)
-        return torch.arccosh(self.curvature * _minkowski_dot(u[None, :], v[:, None])) / torch.sqrt(-self.curvature)
+        u, v = self._preprocess_for_dist(u, v)
+        return torch.arccosh(self.curvature * _minkowski_dot(u[None, :], v[:, None])) / sqrt(-self.curvature)
 
 
 class Spherical(GenericManifold):
@@ -58,19 +61,18 @@ class Spherical(GenericManifold):
 
     def on_manifold(self, x):
         x = _preprocess_vecs(x)
-        return torch.allclose(_euc_dot(x, x), 1 / self.curvature) and x.shape[1] == self.dim + 1
+        return torch.allclose(_euc_dot(x, x), torch.Tensor([1 / self.curvature])) and x.shape[1] == self.dim + 1
 
     def dist(self, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-        u, v = _preprocess_for_dist(u, v)
+        u, v = self._preprocess_for_dist(u, v)
         # TODO: is this even correct?
-        return torch.arccos(self.curvature * _euc_dot(u[None, :], v[:, None])) / torch.sqrt(self.curvature)
+        return torch.arccos(self.curvature * _euc_dot(u[None, :], v[:, None])) / sqrt(self.curvature)
 
 
-class ComponentManifold:
-    def __init__(self, dim: int, curvature: float):
-        if curvature < 0:
-            self = Hyperbolic(dim, curvature)
-        elif curvature == 0:
-            self = Euclidean(dim, curvature)
-        elif curvature > 0:
-            self = Spherical(dim, curvature)
+def create_manifold(dim, curvature):
+    if curvature < 0:
+        return Hyperbolic(dim, curvature)
+    elif curvature == 0:
+        return Euclidean(dim, curvature)
+    elif curvature > 0:
+        return Spherical(dim, curvature)
