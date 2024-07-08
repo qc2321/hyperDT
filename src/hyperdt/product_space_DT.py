@@ -2,9 +2,11 @@ import numpy as np
 from .tree import DecisionNode, HyperbolicDecisionTreeClassifier
 from .wrapped_normal_all_curvature import WrappedNormalMixture
 
-'''
+"""
 Decision tree classifier for all curvatures
-'''
+"""
+
+
 class HyperspaceDecisionTree(HyperbolicDecisionTreeClassifier):
     def __init__(self, signed_curvature=-1.0, **kwargs):
         super().__init__(**kwargs)
@@ -12,27 +14,28 @@ class HyperspaceDecisionTree(HyperbolicDecisionTreeClassifier):
         self.curvature = abs(signed_curvature)
         self.skip_hyperboloid_check = True if signed_curvature >= 0.0 else False
 
-
     def _get_candidates(self, X, dim):
         # Hyperbolic case
         if self.signed_curvature < 0.0:
             return super()._get_candidates(X, dim)
-        
+
         # Hypersphere case
-        elif self.signed_curvature > 0.0:        
+        elif self.signed_curvature > 0.0:
             thetas = np.arctan2(X[:, self.timelike_dim], X[:, dim])
-            thetas = np.unique(thetas)      # sorted
+            thetas = np.unique(thetas)  # sorted
             return (thetas[:-1] + thetas[1:]) / 2
-        
+
         # Euclidean case
         else:
             unique_vals = np.unique(X[:, dim])  # sorted
             return np.arctan2(2, unique_vals[:-1] + unique_vals[1:])
-        
 
-'''
+
+"""
 Class for product space object
-'''
+"""
+
+
 class ProductSpace:
     def __init__(self, signature=[], X=None, y=None, seed=None):
         self.signature = signature
@@ -40,7 +43,6 @@ class ProductSpace:
         self.X = X
         self.y = y
         self.seed = seed
-    
 
     def check_signature(self):
         """Check if signature is valid"""
@@ -56,7 +58,6 @@ class ProductSpace:
             if not isinstance(space[1], (int, float)):
                 raise ValueError("Curvature must be an integer or float")
 
-
     def print_signature(self):
         """Print the signature of the product space"""
         for space in self.signature:
@@ -67,18 +68,25 @@ class ProductSpace:
             else:
                 print(f"E: dim={space[0]}")
 
-
     def sample_clusters(self, num_points, num_classes, cov_scale=0.3):
         """Generate data from a wrapped normal mixture on the product space"""
         self.X, self.y, self.means = [], [], []
-        classes = WrappedNormalMixture(num_points=num_points, 
-                                       num_classes=num_classes, seed=self.seed).generate_class_assignments()
+        classes = WrappedNormalMixture(
+            num_points=num_points, num_classes=num_classes, seed=self.seed
+        ).generate_class_assignments()
         for space in self.signature:
-            wnm = WrappedNormalMixture(num_points=num_points, num_classes=num_classes, n_dim=space[0],
-                                       curvature=space[1], seed=self.seed, cov_scale=cov_scale)
+            wnm = WrappedNormalMixture(
+                num_points=num_points,
+                num_classes=num_classes,
+                n_dim=space[0],
+                curvature=space[1],
+                seed=self.seed,
+                cov_scale=cov_scale,
+            )
             means = wnm.generate_cluster_means()
-            covs = [wnm.generate_covariance_matrix(wnm.n_dim, wnm.n_dim + 1, wnm.cov_scale)
-                    for _ in range(wnm.num_classes)]
+            covs = [
+                wnm.generate_covariance_matrix(wnm.n_dim, wnm.n_dim + 1, wnm.cov_scale) for _ in range(wnm.num_classes)
+            ]
             points = wnm.sample_points(means, covs, classes)
             means /= np.sqrt(wnm.k) if wnm.k != 0.0 else 1.0
             self.X.append(points)
@@ -86,11 +94,10 @@ class ProductSpace:
             self.means.append(means)
             if wnm.curvature != 0.0:
                 assert np.allclose(wnm.manifold.metric.squared_norm(points), 1 / wnm.curvature, rtol=1e-4)
-        
-        self.X = np.hstack(self.X)          # (num_points, num_spaces * (num_dims+1) )
-        self.y = self.y[0]                  # (num_points, )
-        self.means = np.hstack(self.means)  # (num_classes, num_dims + 1 )
 
+        self.X = np.hstack(self.X)  # (num_points, num_spaces * (num_dims+1) )
+        self.y = self.y[0]  # (num_points, )
+        self.means = np.hstack(self.means)  # (num_classes, num_dims + 1 )
 
     def split_data(self, test_size=0.2):
         """Split the data into training and testing sets"""
@@ -102,7 +109,6 @@ class ProductSpace:
         self.y_train = np.delete(self.y, test_idx)
         self.y_test = self.y[test_idx]
 
-
     def zero_out_spacelike_dims(self, space_idx):
         """Zero out spacelike dimensions in a given product space component"""
         timelike_dim = sum([space[0] + 1 for space in self.signature[:space_idx]])
@@ -110,31 +116,30 @@ class ProductSpace:
         for i in range(self.signature[space_idx][0]):
             self.X[:, timelike_dim + i + 1] = 0.0
 
-    
     def remove_timelike_dims(self):
         """Remove timelike dimensions from the product space"""
         timelike_dims = [0]
         for i in range(len(self.signature) - 1):
-            timelike_dims.append(sum([space[0] + 1 for space in self.signature[:i+1]]))
+            timelike_dims.append(sum([space[0] + 1 for space in self.signature[: i + 1]]))
         self.X = np.delete(self.X, timelike_dims, axis=1)
 
 
-'''
+"""
 Decision tree classifier for product space
-'''
+"""
+
+
 class ProductSpaceDT(HyperspaceDecisionTree):
     def __init__(self, signature, **kwargs):
         super().__init__(**kwargs)
         self.signature = signature
-        
 
     def _get_space(self, dim):
         """Find the space that a dimension belongs to"""
         for i in range(len(self.signature) - 1):
-            if dim < sum([space[0] + 1 for space in self.signature[:i+1]]):
+            if dim < sum([space[0] + 1 for space in self.signature[: i + 1]]):
                 return i
         return len(self.signature) - 1
-
 
     def _fit_node(self, X, y, depth):
         """Recursively fit a node of the tree. Modified from DecisionTreeClassifier
@@ -150,9 +155,9 @@ class ProductSpaceDT(HyperspaceDecisionTree):
             space = self._get_space(dim)
             self.signed_curvature = self.signature[space][1]
             dim_in_space = dim - self.timelike_dims[space]
-            space_cols = [self.timelike_dims[space] + i for i in range(self.signature[space][0]+1)]
-            for theta in self._get_candidates(X=X[:,space_cols], dim=dim_in_space):
-                left, right = self._get_split(X=X[:,space_cols], dim=dim_in_space, theta=theta)
+            space_cols = [self.timelike_dims[space] + i for i in range(self.signature[space][0] + 1)]
+            for theta in self._get_candidates(X=X[:, space_cols], dim=dim_in_space):
+                left, right = self._get_split(X=X[:, space_cols], dim=dim_in_space, theta=theta)
                 min_len = np.min([len(y[left]), len(y[right])])
                 if min_len >= self.min_samples_leaf:
                     score = self._information_gain(left, right, y)
@@ -169,27 +174,26 @@ class ProductSpaceDT(HyperspaceDecisionTree):
         node.score = best_score
         best_space = self._get_space(best_dim)
         best_dim_in_space = best_dim - self.timelike_dims[best_space]
-        best_space_cols = [self.timelike_dims[best_space] + i for i in range(self.signature[best_space][0]+1)]
-        left, right = self._get_split(X=X[:,best_space_cols], dim=best_dim_in_space, theta=best_theta)
+        best_space_cols = [self.timelike_dims[best_space] + i for i in range(self.signature[best_space][0] + 1)]
+        left, right = self._get_split(X=X[:, best_space_cols], dim=best_dim_in_space, theta=best_theta)
         node.left = self._fit_node(X=X[left], y=y[left], depth=depth + 1)
         node.right = self._fit_node(X=X[right], y=y[right], depth=depth + 1)
         return node
-    
 
     def fit(self, X, y):
         """Fit a decision tree to the data. Modified from HyperbolicDecisionTreeClassifier
         to remove multiple timelike dimensions in product space."""
         # Find all dimensions in product space (including timelike dimensions)
         self.all_dims = list(range(sum([space[0] + 1 for space in self.signature])))
-        
+
         # Find indices of timelike dimensions in product space
         self.timelike_dims = [0]
         for i in range(len(self.signature) - 1):
-            self.timelike_dims.append(sum([space[0] + 1 for space in self.signature[:i+1]]))
-        
+            self.timelike_dims.append(sum([space[0] + 1 for space in self.signature[: i + 1]]))
+
         # Remove timelike dimensions from list of dimensions
         self.dims_ex_time = list(np.delete(np.array(self.all_dims), self.timelike_dims))
-        
+
         # Get array of classes
         self.classes_ = np.unique(y)
 
@@ -202,4 +206,40 @@ class ProductSpaceDT(HyperspaceDecisionTree):
         dim_in_space = node.feature - self.timelike_dims[space]
         space_cols = [self.timelike_dims[space] + i for i in range(self.signature[space][0] + 1)]
         return self._dot(x[space_cols].reshape(1, -1), dim_in_space, node.theta).item() < 0
-    
+
+
+class ProductSpaceDTRegressor(ProductSpaceDT):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _leaf_values(self, y):
+        """Return the mean of the target values"""
+        return np.mean(y), None
+
+    def _mse(self, y):
+        """Mean squared error"""
+        return np.mean((y - np.mean(y)) ** 2)
+
+    def _leaf_values(self, y):
+        """Return the value and probability (dummy) of a leaf node"""
+        return np.mean(y), None  # TODO: probs?
+
+    def predict(self, X):
+        """Predict labels for samples in X"""
+        return np.array([self._traverse(x).value for x in X])
+
+    def predict_proba(self, X):
+        """Predict class probabilities for samples in X (dummy)"""
+        raise NotImplementedError("Regression does not support predict_proba")
+
+    def score(self, X, y):
+        """Return the mean accuracy/score on the given test data and labels"""
+        y_hat = self.predict(X)
+        return np.mean((y - y_hat) ** 2)
+
+    def fit(self, X, y):
+        """Fit a decision tree to the data. Wrapper for DecisionTreeClassifier's fit method but with a dummy
+        self.classes_ attribute."""
+        super().fit(X, y)
+        self.classes_ = None
+        return self
