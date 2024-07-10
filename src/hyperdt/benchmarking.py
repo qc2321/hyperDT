@@ -5,6 +5,8 @@ from .product_space_DT import ProductSpace, ProductSpaceDT
 from .forest import ProductSpaceRF
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import Perceptron
+from sklearn.svm import SVC
 from .product_space_perceptron import mix_curv_perceptron
 from .product_space_svm import mix_curv_svm
 from sklearn.metrics import f1_score
@@ -54,6 +56,22 @@ def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_dept
     elif metric == 'f1':
         rf_score = f1_score(ps.y_test, rf.predict(ps.X_test), average='macro')
 
+    # Fit sklearn's perceptron
+    perc = Perceptron()
+    perc.fit(ps.X_train, ps.y_train)
+    if metric == 'accuracy':
+        perc_score = perc.score(ps.X_test, ps.y_test)
+    elif metric == 'f1':
+        perc_score = f1_score(ps.y_test, perc.predict(ps.X_test), average='macro')
+    
+    # Fit sklearn's SVM
+    svm = SVC()
+    svm.fit(ps.X_train, ps.y_train)
+    if metric == 'accuracy':
+        svm_score = svm.score(ps.X_test, ps.y_test)
+    elif metric == 'f1':
+        svm_score = f1_score(ps.y_test, svm.predict(ps.X_test), average='macro')
+
     # Fit product space perceptron (F1 score only)
     mix_component = sig_to_mix_component(signature)
     embed_data = make_embed_data(ps.X, ps.X_train, ps.X_test, ps.y_train, ps.y_test, signature)
@@ -64,7 +82,7 @@ def compute_scores(signature, n, num_classes, seed=None, cov_scale=0.3, max_dept
     ps_svm = mix_curv_svm(mix_component, embed_data)
     ps_svm_score = ps_svm.process_data()
 
-    return psdt_score, psrf_score, dt_score, rf_score, ps_perc_score, ps_svm_score
+    return psdt_score, psrf_score, dt_score, rf_score, perc_score, svm_score, ps_perc_score, ps_svm_score
 
 
 def compute_scores_by_signature(signatures, n, num_classes, seed=None, cov_scale=0.3,
@@ -77,6 +95,8 @@ def compute_scores_by_signature(signatures, n, num_classes, seed=None, cov_scale
     psrf_scores_by_signature = []
     dt_scores_by_signature = []
     rf_scores_by_signature = []
+    perc_scores_by_signature = []
+    svm_scores_by_signature = []
     ps_perc_scores_by_signature = []
     ps_svm_scores_by_signature = []
     
@@ -86,6 +106,8 @@ def compute_scores_by_signature(signatures, n, num_classes, seed=None, cov_scale
         psrf_scores = []
         dt_scores = []
         rf_scores = []
+        perc_scores = []
+        svm_scores = []
         ps_perc_scores = []
         ps_svm_scores = []
 
@@ -97,20 +119,24 @@ def compute_scores_by_signature(signatures, n, num_classes, seed=None, cov_scale
             psrf_scores.append(score_tuple[1])
             dt_scores.append(score_tuple[2])
             rf_scores.append(score_tuple[3])
-            ps_perc_scores.append(score_tuple[4])
-            ps_svm_scores.append(score_tuple[5])
+            perc_scores.append(score_tuple[4])
+            svm_scores.append(score_tuple[5])
+            ps_perc_scores.append(score_tuple[6])
+            ps_svm_scores.append(score_tuple[7])
             my_tqdm.update(1)
         
         psdt_scores_by_signature.append(psdt_scores)
         psrf_scores_by_signature.append(psrf_scores)
         dt_scores_by_signature.append(dt_scores)
         rf_scores_by_signature.append(rf_scores)
+        perc_scores_by_signature.append(perc_scores)
+        svm_scores_by_signature.append(svm_scores)
         ps_perc_scores_by_signature.append(ps_perc_scores)
         ps_svm_scores_by_signature.append(ps_svm_scores)
 
     return (rnd_seeds, psdt_scores_by_signature, psrf_scores_by_signature,
-            dt_scores_by_signature, rf_scores_by_signature, ps_perc_scores_by_signature,
-            ps_svm_scores_by_signature)
+            dt_scores_by_signature, rf_scores_by_signature, perc_scores_by_signature,
+            svm_scores_by_signature, ps_perc_scores_by_signature, ps_svm_scores_by_signature)
 
 
 def compute_avg_scores(psdt_scores_by_signature, dt_scores_by_signature):
