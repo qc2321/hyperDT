@@ -163,7 +163,7 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         """Predict labels for samples in X"""
-        return torch.Tensor([self.classes_[self._traverse(x).value] for x in X])
+        return torch.tensor([self.classes_[self._traverse(x).value] for x in X], device=X.device)
 
     def predict_proba(self, X):
         """Predict class probabilities for samples in X"""
@@ -171,7 +171,7 @@ class DecisionTreeClassifier(BaseEstimator, ClassifierMixin):
 
     def score(self, X, y):
         """Return the mean accuracy on the given test data and labels"""
-        return torch.Tensor(self.predict(X) == y)
+        return torch.tensor(self.predict(X) == y)
 
 
 class HyperbolicDecisionTreeClassifier(DecisionTreeClassifier):

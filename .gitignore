@@ -1,6 +1,6 @@
 data/
 *.pyc
-src/__pycache__/
+*/__pycache__/
 *.egg_info/
 build/
 .DS_Store

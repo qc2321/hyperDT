@@ -1,5 +1,7 @@
 import torch
 from .tree import DecisionNode, HyperbolicDecisionTreeClassifier
+from .hyperbolic_trig import _hyperbolic_midpoint
+
 
 # from .wrapped_normal_all_curvature import WrappedNormalMixture
 
