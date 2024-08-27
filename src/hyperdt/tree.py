@@ -298,8 +298,21 @@ class DecisionTreeRegressor(DecisionTreeClassifier):
         return self
 
 
-class HyperbolicDecisionTreeRegressor(DecisionTreeRegressor, HyperbolicDecisionTreeClassifier):
-    """Hacky multiple inheritance constructor - seems to work though"""
-
+class HyperbolicDecisionTreeRegressor(HyperbolicDecisionTreeClassifier):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def _leaf_values(self, y):
+        """Return the value and probability (dummy) of a leaf node"""
+        return np.mean(y), None
+
+    def predict(self, X):
+        """Predict labels for samples in X"""
+        return np.array([self._traverse(x).value for x in X])
+
+    def fit(self, X, y):
+        """Fit a decision tree to the data. Wrapper for HyperbolicDecisionTreeClassifier's fit method
+        but with a dummy self.classes_ attribute."""
+        super().fit(X, y)
+        self.classes_ = None
+        return self
